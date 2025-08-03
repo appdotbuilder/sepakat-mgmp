@@ -1,70 +1,130 @@
 
-import { type Region, type School, type Subject, type AcademicYear } from '../schema';
+import { db } from '../db';
+import { regionsTable, schoolsTable, subjectsTable, academicYearsTable } from '../db/schema';
+import { type Region, type School, type Subject, type AcademicYear, type EducationLevel } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export async function getRegions(): Promise<Region[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to fetch all regions for system configuration.
-    
-    return [];
+  try {
+    const results = await db.select()
+      .from(regionsTable)
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch regions:', error);
+    throw error;
+  }
 }
 
 export async function getSchools(regionId?: number): Promise<School[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to fetch schools, optionally filtered by region.
-    
-    return [];
+  try {
+    let query = db.select().from(schoolsTable);
+
+    if (regionId !== undefined) {
+      const results = await query.where(eq(schoolsTable.region_id, regionId)).execute();
+      return results;
+    }
+
+    const results = await query.execute();
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch schools:', error);
+    throw error;
+  }
 }
 
 export async function getSubjects(level?: string): Promise<Subject[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to fetch subjects, optionally filtered by education level.
-    
-    return [];
+  try {
+    let query = db.select().from(subjectsTable);
+
+    if (level) {
+      const results = await query.where(eq(subjectsTable.level, level as EducationLevel)).execute();
+      return results;
+    }
+
+    const results = await query.execute();
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch subjects:', error);
+    throw error;
+  }
 }
 
 export async function getAcademicYears(): Promise<AcademicYear[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to fetch all academic years.
-    
-    return [];
+  try {
+    const results = await db.select()
+      .from(academicYearsTable)
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch academic years:', error);
+    throw error;
+  }
 }
 
 export async function createRegion(name: string, code: string): Promise<Region> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to create a new region (Super Admin only).
-    
-    return {
-        id: 1,
+  try {
+    const result = await db.insert(regionsTable)
+      .values({
         name,
-        code,
-        created_at: new Date()
-    } as Region;
+        code
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Region creation failed:', error);
+    throw error;
+  }
 }
 
 export async function createSchool(name: string, npsn: string, address: string, level: string, regionId: number): Promise<School> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to create a new school (Super Admin only).
-    
-    return {
-        id: 1,
+  try {
+    // Verify region exists
+    const regionExists = await db.select()
+      .from(regionsTable)
+      .where(eq(regionsTable.id, regionId))
+      .execute();
+
+    if (regionExists.length === 0) {
+      throw new Error(`Region with id ${regionId} does not exist`);
+    }
+
+    const result = await db.insert(schoolsTable)
+      .values({
         name,
         npsn,
         address,
-        level: level as any,
-        region_id: regionId,
-        created_at: new Date()
-    } as School;
+        level: level as EducationLevel,
+        region_id: regionId
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('School creation failed:', error);
+    throw error;
+  }
 }
 
 export async function createSubject(name: string, code: string, level: string): Promise<Subject> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to create a new subject (Super Admin only).
-    
-    return {
-        id: 1,
+  try {
+    const result = await db.insert(subjectsTable)
+      .values({
         name,
         code,
-        level: level as any,
-        created_at: new Date()
-    } as Subject;
+        level: level as EducationLevel
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Subject creation failed:', error);
+    throw error;
+  }
 }
